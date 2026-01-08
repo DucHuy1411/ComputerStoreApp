@@ -35,6 +35,14 @@ const Order = sequelize.define(
       defaultValue: "unpaid",
     },
 
+    paymentMethod: {
+      type: DataTypes.ENUM("cod", "vnpay", "bank", "other"),
+      allowNull: true,
+      defaultValue: null,
+    },
+
+    paymentTransactionId: { type: DataTypes.STRING(100), allowNull: true },
+
     placedAt: { type: DataTypes.DATE(3), allowNull: false, defaultValue: DataTypes.NOW },
   },
   { timestamps: true, tableName: "orders" }

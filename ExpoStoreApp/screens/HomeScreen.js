@@ -134,7 +134,7 @@ export default function HomeScreen({ navigation }) {
         pc: "desktop-outline",
         monitor: "tv-outline",
         keyboard: "keypad-outline",
-        mouse: "mouse-outline",
+        mouse: "radio-button-on-outline", // mouse-outline không tồn tại trong Ionicons
         audio: "headset-outline",
       };
 

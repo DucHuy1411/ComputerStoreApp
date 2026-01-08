@@ -9,6 +9,8 @@ const promoRoute = require("./promotions.routes");
 const eventsRoute = require("./events.routes");
 const notifRoute = require("./notifications.routes");
 const searchRoute = require("./search.routes");
+const paymentRoute = require("./payments.routes");
+const adminRoute = require("./admin.routes");
 
 function route(app) {
   app.use("/auth", authRoute);
@@ -22,6 +24,8 @@ function route(app) {
   app.use("/events", eventsRoute);
   app.use("/notifications", notifRoute);
   app.use("/search", searchRoute);
+  app.use("/api/payments", paymentRoute);
+  app.use("/admin", adminRoute);
 }
 
 module.exports = route;

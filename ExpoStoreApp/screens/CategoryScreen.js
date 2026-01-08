@@ -13,7 +13,7 @@ const ICON_MAP = {
   pc: "desktop-outline",
   monitor: "tv-outline",
   keyboard: "keypad-outline",
-  mouse: "mouse-outline",
+  mouse: "radio-button-on-outline", // mouse-outline không tồn tại trong Ionicons
   audio: "headset-outline",
   storage: "server-outline",
   network: "wifi-outline",
@@ -26,7 +26,7 @@ const guessIcon = (cat) => {
   if (s.includes("pc") || s.includes("linh kiện") || s.includes("component")) return "desktop-outline";
   if (s.includes("màn hình") || s.includes("monitor")) return "tv-outline";
   if (s.includes("bàn phím") || s.includes("keyboard")) return "keypad-outline";
-  if (s.includes("chuột") || s.includes("mouse")) return "mouse-outline";
+  if (s.includes("chuột") || s.includes("mouse")) return "radio-button-on-outline"; // mouse-outline không tồn tại trong Ionicons
   if (s.includes("tai nghe") || s.includes("audio") || s.includes("headset")) return "headset-outline";
   if (s.includes("ssd") || s.includes("hdd") || s.includes("lưu trữ") || s.includes("storage")) return "server-outline";
   if (s.includes("wifi") || s.includes("router") || s.includes("mạng") || s.includes("network")) return "wifi-outline";
