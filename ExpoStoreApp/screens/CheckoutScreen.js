@@ -23,6 +23,7 @@ import {
   apiCheckPaymentStatus,
   apiOrderDetail,
   apiShippingOptions,
+  apiPromotions,
 } from '../services/endpoints';
 
 import styles, { COLORS } from '../styles/CheckoutStyle';
@@ -100,6 +101,16 @@ export default function CheckoutScreen({ navigation, route }) {
 
   const [placing, setPlacing] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [voucherInput, setVoucherInput] = useState(
+    String(route?.params?.voucherCode || '').trim(),
+  );
+  const [voucherApplied, setVoucherApplied] = useState(null);
+  const [voucherStatus, setVoucherStatus] = useState(null);
+  const [voucherBusy, setVoucherBusy] = useState(false);
+  const [voucherAutoApplied, setVoucherAutoApplied] = useState(false);
+  const [voucherModal, setVoucherModal] = useState(false);
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherList, setVoucherList] = useState([]);
 
   const selectedAddress = useMemo(() => {
     if (!addresses?.length) return null;
@@ -184,10 +195,24 @@ export default function CheckoutScreen({ navigation, route }) {
     [selectedShipping],
   );
 
-  const totalNumber = useMemo(
-    () => subtotalNumber + shippingFee,
-    [subtotalNumber, shippingFee],
-  );
+  const discountNumber = useMemo(() => {
+    if (!voucherApplied) return 0;
+    const minOrder = Number(voucherApplied.minOrderAmount || 0);
+    if (subtotalNumber < minOrder) return 0;
+    const dv = Number(voucherApplied.discountValue || 0);
+    if (voucherApplied.discountType === 'amount') {
+      return Math.min(subtotalNumber, dv);
+    }
+    if (voucherApplied.discountType === 'percent') {
+      return Math.floor((subtotalNumber * dv) / 100);
+    }
+    return 0;
+  }, [subtotalNumber, voucherApplied]);
+
+  const totalNumber = useMemo(() => {
+    const base = Math.max(0, subtotalNumber - discountNumber);
+    return base + shippingFee;
+  }, [subtotalNumber, discountNumber, shippingFee]);
 
   const totalText = useMemo(() => formatVnd(totalNumber), [totalNumber]);
 
@@ -301,6 +326,137 @@ export default function CheckoutScreen({ navigation, route }) {
     ]);
   };
 
+  const formatDateVN = (d) => {
+    try {
+      const x = new Date(d);
+      const dd = String(x.getDate()).padStart(2, '0');
+      const mm = String(x.getMonth() + 1).padStart(2, '0');
+      const yyyy = x.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    } catch {
+      return '—';
+    }
+  };
+
+  const formatVoucherValue = (type, value) => {
+    const v = Number(value || 0);
+    if (type === 'percent') return `${v}%`;
+    if (type === 'amount') return formatVnd(v);
+    return '—';
+  };
+
+  const normalizeVoucherCode = (code) => String(code || '').trim().toUpperCase();
+
+  const applyVoucherPromo = (promo, rawCode) => {
+    const code = normalizeVoucherCode(rawCode || promo?.code || voucherInput);
+    if (!promo || !code) {
+      setVoucherApplied(null);
+      setVoucherStatus({ type: 'error', message: 'Voucher không hợp lệ hoặc đã hết hạn' });
+      return;
+    }
+
+    const minOrder = Number(promo.minOrderAmount || 0);
+    if (subtotalNumber < minOrder) {
+      setVoucherApplied(null);
+      setVoucherStatus({
+        type: 'error',
+        message: `Đơn tối thiểu ${formatVnd(minOrder)} để dùng voucher này`,
+      });
+      return;
+    }
+
+    setVoucherInput(code);
+    setVoucherApplied({
+      id: promo.id,
+      code,
+      title: promo.title || 'Voucher',
+      discountType: promo.discountType,
+      discountValue: promo.discountValue,
+      minOrderAmount: minOrder,
+    });
+    setVoucherStatus({ type: 'success', message: `Đã áp dụng ${code}` });
+  };
+
+  const applyVoucher = async (rawCode) => {
+    const code = normalizeVoucherCode(rawCode || voucherInput);
+    if (!code) {
+      setVoucherStatus({ type: 'error', message: 'Vui lòng chọn voucher' });
+      return;
+    }
+
+    try {
+      setVoucherBusy(true);
+      setVoucherStatus(null);
+
+      const res = await apiPromotions({ type: 'voucher' });
+      const list = Array.isArray(res?.promotions) ? res.promotions : [];
+      const promo = list.find(
+        (p) => normalizeVoucherCode(p?.code) === code && p?.isActive,
+      );
+
+      if (!promo) {
+        setVoucherApplied(null);
+        setVoucherStatus({ type: 'error', message: 'Voucher không hợp lệ hoặc đã hết hạn' });
+        return;
+      }
+
+      applyVoucherPromo(promo, code);
+    } catch (e) {
+      setVoucherApplied(null);
+      setVoucherStatus({
+        type: 'error',
+        message: e?.message || 'Không thể áp dụng voucher',
+      });
+    } finally {
+      setVoucherBusy(false);
+    }
+  };
+
+  const clearVoucher = () => {
+    setVoucherApplied(null);
+    setVoucherStatus(null);
+  };
+
+  const loadVouchers = useCallback(async () => {
+    try {
+      setVoucherLoading(true);
+      const res = await apiPromotions({ type: 'voucher' });
+      const list = Array.isArray(res?.promotions) ? res.promotions : [];
+      const filtered = list.filter((p) => String(p?.type) === 'voucher' && p?.isActive);
+      const normalized = filtered
+        .slice()
+        .sort((a, b) => (Number(b?.id || 0) || 0) - (Number(a?.id || 0) || 0))
+        .map((p) => ({
+          id: String(p.id),
+          code: normalizeVoucherCode(p.code || ''),
+          title: p.title || 'Voucher',
+          discountType: p.discountType,
+          discountValue: p.discountValue,
+          minOrderAmount: Number(p.minOrderAmount || 0),
+          endsAt: p.endsAt,
+          raw: p,
+        }));
+
+      setVoucherList(normalized);
+    } catch (e) {
+      setVoucherList([]);
+    } finally {
+      setVoucherLoading(false);
+    }
+  }, []);
+
+  const openVoucherModal = () => {
+    setVoucherModal(true);
+    if (voucherList.length === 0 && !voucherLoading) loadVouchers();
+  };
+
+  useEffect(() => {
+    if (!voucherAutoApplied && voucherInput) {
+      setVoucherAutoApplied(true);
+      applyVoucher(voucherInput);
+    }
+  }, [voucherAutoApplied, voucherInput]);
+
   const placeOrder = async () => {
     if (!selectedAddress) {
       Alert.alert('Thiếu thông tin', 'Chưa có địa chỉ giao hàng');
@@ -317,6 +473,7 @@ export default function CheckoutScreen({ navigation, route }) {
       const payload = {
         addressId: selectedAddress.id,
         shippingMethod: shipMethod,
+        promotionCode: voucherApplied?.code || undefined,
       };
 
       let orderResult;
@@ -414,6 +571,7 @@ export default function CheckoutScreen({ navigation, route }) {
             subtotalNumber,
             shippingNumber: shippingFee,
             totalNumber,
+            discountNumber,
           },
         });
       }
@@ -448,6 +606,7 @@ export default function CheckoutScreen({ navigation, route }) {
             subtotalNumber,
             shippingNumber: shippingFee,
             totalNumber,
+            discountNumber,
           },
         });
       } else {
@@ -836,6 +995,55 @@ export default function CheckoutScreen({ navigation, route }) {
         </View>
 
         <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <Ionicons name="ticket-outline" size={18} color={COLORS.BLUE} />
+              <Text style={styles.cardTitle}>Voucher</Text>
+            </View>
+            {voucherApplied ? (
+              <Pressable onPress={clearVoucher}>
+                <Text style={styles.cardLink}>Xóa</Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <Pressable style={styles.voucherBar} onPress={openVoucherModal}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.voucherBarLabel}>Chọn voucher</Text>
+              <Text style={styles.voucherBarValue}>
+                {voucherInput ? voucherInput : "Chưa chọn"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.MUTED} />
+          </Pressable>
+
+          {!!voucherStatus?.message && (
+            <Text
+              style={[
+                styles.voucherStatus,
+                voucherStatus.type === 'error'
+                  ? styles.voucherStatusError
+                  : styles.voucherStatusSuccess,
+              ]}>
+              {voucherStatus.message}
+            </Text>
+          )}
+
+          {voucherApplied ? (
+            <View style={styles.voucherInfoRow}>
+              <Ionicons
+                name="checkmark-circle"
+                size={16}
+                color={COLORS.GREEN}
+              />
+              <Text style={styles.voucherInfoText}>
+                Giảm {formatVnd(discountNumber)} từ voucher {voucherApplied.code}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.card}>
           <Pressable
             style={styles.prodHeader}
             onPress={() => setProductsOpen((v) => !v)}>
@@ -896,6 +1104,83 @@ export default function CheckoutScreen({ navigation, route }) {
           )}
         </Pressable>
       </View>
+
+      <Modal
+        visible={voucherModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setVoucherModal(false)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setVoucherModal(false)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn voucher</Text>
+              <Pressable
+                onPress={() => setVoucherModal(false)}
+                style={styles.modalClose}>
+                <Ionicons name="close" size={20} color={COLORS.TEXT} />
+              </Pressable>
+            </View>
+
+            {voucherLoading ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator />
+                <Text style={styles.loadingText}>Đang tải...</Text>
+              </View>
+            ) : voucherList.length > 0 ? (
+              <ScrollView
+                contentContainerStyle={{ paddingBottom: 12 }}
+                showsVerticalScrollIndicator={false}>
+                {voucherList.map((v) => {
+                  const selected =
+                    normalizeVoucherCode(v.code) === normalizeVoucherCode(voucherInput);
+                  const valueText = formatVoucherValue(v.discountType, v.discountValue);
+                  const minText =
+                    v.minOrderAmount > 0
+                      ? `Đơn từ ${formatVnd(v.minOrderAmount)}`
+                      : 'Áp dụng mọi đơn';
+                  const expText = v.endsAt
+                    ? `HSD: ${formatDateVN(v.endsAt)}`
+                    : 'HSD: —';
+
+                  return (
+                    <Pressable
+                      key={v.id}
+                      style={[
+                        styles.voucherItem,
+                        selected && styles.voucherItemActive,
+                      ]}
+                      onPress={() => {
+                        applyVoucherPromo(v, v.code);
+                        setVoucherModal(false);
+                      }}>
+                      <View style={styles.voucherItemTop}>
+                        <Text style={styles.voucherItemTitle} numberOfLines={1}>
+                          {v.title}
+                        </Text>
+                        <View style={styles.voucherItemBadge}>
+                          <Text style={styles.voucherItemBadgeText}>{valueText}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.voucherItemCode}>Mã: {v.code}</Text>
+                      <View style={styles.voucherItemMetaRow}>
+                        <Text style={styles.voucherItemMeta}>{minText}</Text>
+                        <Text style={styles.voucherItemMeta}>{expText}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <View style={styles.addrEmpty}>
+                <Ionicons name="ticket-outline" size={26} color={COLORS.MUTED} />
+                <Text style={styles.addrEmptyText}>Chưa có voucher phù hợp</Text>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal
         visible={addrModal}
