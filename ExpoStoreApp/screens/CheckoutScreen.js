@@ -141,6 +141,21 @@ export default function CheckoutScreen({ navigation, route }) {
     return [];
   }, [order?.products, product, qty]);
 
+  const orderProducts = useMemo(() => {
+    if (order?.products?.length) return order.products;
+    if (product) {
+      return [
+        {
+          productId: product.id,
+          name: product.name || 'Sản phẩm',
+          qty: Number(qty || 1),
+          priceNumber: Number(product.price || 0),
+        },
+      ];
+    }
+    return [];
+  }, [order?.products, product, qty]);
+
   const subtotalNumber = useMemo(() => {
     if (order?.subtotalNumber != null)
       return Number(order.subtotalNumber || 0);
@@ -395,7 +410,7 @@ export default function CheckoutScreen({ navigation, route }) {
               phone: selectedAddress?.phone,
               address: selectedAddress?.address,
             },
-            products: order?.products || [],
+            products: orderProducts,
             subtotalNumber,
             shippingNumber: shippingFee,
             totalNumber,
@@ -429,7 +444,7 @@ export default function CheckoutScreen({ navigation, route }) {
               phone: selectedAddress?.phone,
               address: selectedAddress?.address,
             },
-            products: order?.products || [],
+            products: orderProducts,
             subtotalNumber,
             shippingNumber: shippingFee,
             totalNumber,

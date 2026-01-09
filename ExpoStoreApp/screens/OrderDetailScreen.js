@@ -302,7 +302,10 @@ export default function OrderDetailScreen({ navigation, route }) {
                 <Text style={[styles.topBtnText, { color: COLORS.BLUE }]}>Hủy đơn</Text>
               </Pressable>
 
-              <Pressable style={[styles.topBtn, styles.topBtnOutline]} onPress={() => navigation.navigate("Home")}>
+              <Pressable
+                style={[styles.topBtn, styles.topBtnOutline]}
+                onPress={() => navigation.navigate("AppTabs", { screen: "Home" })}
+              >
                 <Ionicons name="bag-handle-outline" size={16} color={COLORS.BLUE} />
                 <Text style={[styles.topBtnText, { color: COLORS.BLUE }]}>Mua tiếp</Text>
               </Pressable>

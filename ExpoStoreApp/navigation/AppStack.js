@@ -8,6 +8,7 @@ import CheckoutScreen from "../screens/CheckoutScreen";
 import OrderSuccessScreen from "../screens/OrderSuccessScreen";
 import CategoryDetailScreen from "../screens/CategoryDetailScreen";
 import OrderScreen from "../screens/OrderScreen";
+import OrderDetailScreen from "../screens/OrderDetailScreen";
 
 
 
@@ -24,6 +25,7 @@ export default function AppStack() {
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
       <Stack.Screen name="Category" component={CategoryDetailScreen} />
       <Stack.Screen name="Orders" component={OrderScreen} />
+      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
     </Stack.Navigator>
   );
 }
