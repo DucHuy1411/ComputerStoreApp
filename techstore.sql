@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Jan 08, 2026 at 03:24 PM
+-- Generation Time: Jan 09, 2026 at 09:53 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -160,7 +160,7 @@ CREATE TABLE `orders` (
   `shipPhone` varchar(30) NOT NULL,
   `shipAddressText` varchar(450) NOT NULL,
   `status` enum('pending','processing','shipping','done','canceled') NOT NULL DEFAULT 'pending',
-  `shippingMethod` enum('standard','fast','store') NOT NULL DEFAULT 'standard',
+  `shippingMethod` varchar(50) DEFAULT NULL,
   `shippingFee` decimal(15,2) NOT NULL DEFAULT 0.00,
   `subtotal` decimal(15,2) NOT NULL DEFAULT 0.00,
   `discountTotal` decimal(15,2) NOT NULL DEFAULT 0.00,
@@ -238,7 +238,8 @@ INSERT INTO `orders` (`id`, `code`, `userId`, `addressId`, `shipName`, `shipPhon
 (67, 'ORD-988168', 2, 5, 'Nguyen Van An', '0222333222', '123 Quang Trung, Thanh Xuân, Thanh Xuân, Hà Nôi', 'pending', 'standard', 0.00, 1790000.00, 0.00, 1790000.00, NULL, 'unpaid', 'vnpay', NULL, '2026-01-08 00:03:18.507', '2026-01-08 00:03:18.000', '2026-01-08 00:03:19.000'),
 (68, 'ORD-115499', 2, 5, 'Nguyen Van An', '0222333222', '123 Quang Trung, Thanh Xuân, Thanh Xuân, Hà Nôi', 'pending', 'standard', 0.00, 1790000.00, 0.00, 1790000.00, NULL, 'unpaid', 'vnpay', NULL, '2026-01-08 00:05:40.050', '2026-01-08 00:05:40.000', '2026-01-08 00:05:40.000'),
 (69, 'ORD-508225', 2, 5, 'Nguyen Van An', '0222333222', '123 Quang Trung, Thanh Xuân, Thanh Xuân, Hà Nôi', 'pending', 'standard', 0.00, 1390000.00, 0.00, 1390000.00, NULL, 'unpaid', 'vnpay', NULL, '2026-01-08 00:07:38.734', '2026-01-08 00:07:38.000', '2026-01-08 00:07:39.000'),
-(70, 'ORD-721539', 2, 5, 'Nguyen Van An', '0222333222', '123 Quang Trung, Thanh Xuân, Thanh Xuân, Hà Nôi', 'pending', 'standard', 0.00, 1390000.00, 0.00, 1390000.00, NULL, 'unpaid', 'vnpay', NULL, '2026-01-08 00:10:36.798', '2026-01-08 00:10:36.000', '2026-01-08 00:10:37.000');
+(70, 'ORD-721539', 2, 5, 'Nguyen Van An', '0222333222', '123 Quang Trung, Thanh Xuân, Thanh Xuân, Hà Nôi', 'done', 'standard', 0.00, 1390000.00, 0.00, 1390000.00, NULL, 'paid', 'vnpay', NULL, '2026-01-08 00:10:36.798', '2026-01-08 00:10:36.000', '2026-01-09 15:42:18.000'),
+(71, 'ORD-518523', 2, 5, 'Nguyen Van An', '0222333222', '123 Quang Trung, Thanh Xuân, Thanh Xuân, Hà Nôi', 'done', 'sieutochn', 80000.00, 1390000.00, 0.00, 1470000.00, NULL, 'paid', NULL, NULL, '2026-01-09 15:41:00.839', '2026-01-09 15:41:00.000', '2026-01-09 15:41:44.000');
 
 -- --------------------------------------------------------
 
@@ -325,7 +326,8 @@ INSERT INTO `order_items` (`id`, `orderId`, `productId`, `productName`, `product
 (76, 67, 3, 'Bàn phím cơ Logitech G Pro X', '[\"https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=1200&q=80\"]', 1790000.00, 1, 1790000.00, '2026-01-08 00:03:18.000', '2026-01-08 00:03:18.000'),
 (77, 68, 3, 'Bàn phím cơ Logitech G Pro X', '[\"https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=1200&q=80\"]', 1790000.00, 1, 1790000.00, '2026-01-08 00:05:40.000', '2026-01-08 00:05:40.000'),
 (78, 69, 4, 'Chuột Razer DeathAdder V3 Pro', '[\"https://images.unsplash.com/photo-1527814050087-3793815479db?w=1200&q=80\"]', 1390000.00, 1, 1390000.00, '2026-01-08 00:07:38.000', '2026-01-08 00:07:38.000'),
-(79, 70, 4, 'Chuột Razer DeathAdder V3 Pro', '[\"https://images.unsplash.com/photo-1527814050087-3793815479db?w=1200&q=80\"]', 1390000.00, 1, 1390000.00, '2026-01-08 00:10:36.000', '2026-01-08 00:10:36.000');
+(79, 70, 4, 'Chuột Razer DeathAdder V3 Pro', '[\"https://images.unsplash.com/photo-1527814050087-3793815479db?w=1200&q=80\"]', 1390000.00, 1, 1390000.00, '2026-01-08 00:10:36.000', '2026-01-08 00:10:36.000'),
+(80, 71, 4, 'Chuột Razer DeathAdder V3 Pro', '[\"https://images.unsplash.com/photo-1527814050087-3793815479db?w=1200&q=80\"]', 1390000.00, 1, 1390000.00, '2026-01-09 15:41:00.000', '2026-01-09 15:41:00.000');
 
 -- --------------------------------------------------------
 
@@ -415,7 +417,16 @@ INSERT INTO `order_status_history` (`id`, `orderId`, `status`, `title`, `descrip
 (76, 67, 'pending', 'Đặt hàng', 'Đơn hàng đã được đặt thành công', '2026-01-08 00:03:18.523', '2026-01-08 00:03:18.000', '2026-01-08 00:03:18.000'),
 (77, 68, 'pending', 'Đặt hàng', 'Đơn hàng đã được đặt thành công', '2026-01-08 00:05:40.069', '2026-01-08 00:05:40.000', '2026-01-08 00:05:40.000'),
 (78, 69, 'pending', 'Đặt hàng', 'Đơn hàng đã được đặt thành công', '2026-01-08 00:07:38.753', '2026-01-08 00:07:38.000', '2026-01-08 00:07:38.000'),
-(79, 70, 'pending', 'Đặt hàng', 'Đơn hàng đã được đặt thành công', '2026-01-08 00:10:36.808', '2026-01-08 00:10:36.000', '2026-01-08 00:10:36.000');
+(79, 70, 'pending', 'Đặt hàng', 'Đơn hàng đã được đặt thành công', '2026-01-08 00:10:36.808', '2026-01-08 00:10:36.000', '2026-01-08 00:10:36.000'),
+(80, 71, 'pending', 'Đặt hàng', 'Đơn hàng đã được đặt thành công', '2026-01-09 15:41:00.844', '2026-01-09 15:41:00.000', '2026-01-09 15:41:00.000'),
+(81, 71, 'pending', 'Cập nhật thanh toán: Đã thanh toán', 'Chuyển trạng thái thanh toán từ Chưa thanh toán sang Đã thanh toán', '2026-01-09 15:41:39.394', '2026-01-09 15:41:39.000', '2026-01-09 15:41:39.000'),
+(82, 71, 'processing', 'Đang xử lý', 'Chuyển trạng thái từ Chờ xử lý sang Đang xử lý', '2026-01-09 15:41:41.441', '2026-01-09 15:41:41.000', '2026-01-09 15:41:41.000'),
+(83, 71, 'shipping', 'Đang giao hàng', 'Chuyển trạng thái từ Đang xử lý sang Đang giao hàng', '2026-01-09 15:41:43.257', '2026-01-09 15:41:43.000', '2026-01-09 15:41:43.000'),
+(84, 71, 'done', 'Hoàn thành', 'Chuyển trạng thái từ Đang giao hàng sang Hoàn thành', '2026-01-09 15:41:44.971', '2026-01-09 15:41:44.000', '2026-01-09 15:41:44.000'),
+(85, 70, 'processing', 'Đang xử lý', 'Đơn hàng chuyển từ Chờ xử lý sang Đang xử lý', '2026-01-09 15:42:07.836', '2026-01-09 15:42:07.000', '2026-01-09 15:42:07.000'),
+(86, 70, 'shipping', 'Đang giao hàng', 'Chuyển trạng thái từ Đang xử lý sang Đang giao hàng', '2026-01-09 15:42:11.855', '2026-01-09 15:42:11.000', '2026-01-09 15:42:11.000'),
+(87, 70, 'shipping', 'Cập nhật thanh toán: Đã thanh toán', 'Chuyển trạng thái thanh toán từ Chưa thanh toán sang Đã thanh toán', '2026-01-09 15:42:16.141', '2026-01-09 15:42:16.000', '2026-01-09 15:42:16.000'),
+(88, 70, 'done', 'Hoàn thành', 'Chuyển trạng thái từ Đang giao hàng sang Hoàn thành', '2026-01-09 15:42:18.858', '2026-01-09 15:42:18.000', '2026-01-09 15:42:18.000');
 
 -- --------------------------------------------------------
 
@@ -457,7 +468,7 @@ INSERT INTO `products` (`id`, `categoryId`, `name`, `slug`, `sku`, `brandName`, 
 (2, 4, 'Laptop Asus ROG Strix G15 RTX 4060', 'asus-rog-strix-g15-rtx4060', 'ROG-G15', 'Asus', 23390000.00, 35990000.00, 35, NULL, 12, 5.00, 567, 0, 0, '[\"https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1200&q=80\"]', NULL, '[\"Trả góp 0%\"]', NULL, 'active', '2025-12-24 13:33:48.983', '2025-12-24 13:33:48.983'),
 (3, 7, 'Bàn phím cơ Logitech G Pro X', 'logitech-g-pro-x', 'G-PRO', 'Logitech', 1790000.00, 2990000.00, 40, NULL, 20, 5.00, 892, 0, 0, '[\"https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=1200&q=80\"]', NULL, '[\"Flash Sale\"]', NULL, 'active', '2025-12-24 13:33:48.983', '2025-12-24 13:33:48.983'),
 (4, 8, 'Chuột Razer DeathAdder V3 Pro', 'razer-deathadder-v3-pro', 'DA-V3', 'Razer', 1390000.00, 1990000.00, 30, NULL, 36, 5.00, 431, 0, 0, '[\"https://images.unsplash.com/photo-1527814050087-3793815479db?w=1200&q=80\"]', NULL, '[\"Flash Sale\"]', NULL, 'active', '2025-12-24 13:33:48.983', '2025-12-24 13:33:48.983'),
-(5, 9, 'Tai nghe Sony WH-1000XM5', 'sony-wh-1000xm5', 'WH-XM5', 'Sony', 7490000.00, 8990000.00, 17, NULL, 200, 5.00, 965, 0, 0, '[\"https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=1200&q=80\"]', NULL, '[\"Giảm giá\"]', NULL, 'active', '2025-12-24 13:33:48.983', '2026-01-06 22:23:26.000'),
+(5, 9, 'Tai nghe Sony WH-1000XM5', 'sony-wh-1000xm5', 'WH-XM5', 'Sony', 7490000.00, 8990000.00, 17, NULL, 200, 5.00, 965, 0, 0, '[\"https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=1200&q=80\"]', NULL, '[\"Giảm giá\"]', NULL, 'active', '2025-12-24 13:33:48.983', '2026-01-09 15:25:33.000'),
 (133, 4, 'Laptop HP Spectre x360 14 Core i7', 'laptop-hp-spectre-x360-14-i7', 'HP-SPX36014-I7', 'HP', 31990000.00, 36990000.00, 14, 2665000.00, 11, 4.70, 418, 1, 1, '[\"https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=1200&q=80\", \"https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=1200&q=80\"]', '[{\"k\": \"CPU\", \"v\": \"Intel Core i7\", \"icon\": \"hardware-chip-outline\"}, {\"k\": \"RAM\", \"v\": \"16GB\", \"icon\": \"albums-outline\"}, {\"k\": \"Storage\", \"v\": \"1TB SSD\", \"icon\": \"server-outline\"}, {\"k\": \"Display\", \"v\": \"14\\\" OLED\", \"icon\": \"desktop-outline\"}]', '[\"Trả góp 0%\", \"Freeship\", \"Mới\"]', NULL, 'active', '2025-12-25 02:25:39.441', '2025-12-25 02:25:39.441'),
 (134, 4, 'Laptop Lenovo ThinkPad X1 Carbon Gen 11', 'laptop-lenovo-thinkpad-x1-carbon-g11', 'LNV-X1C-G11', 'Lenovo', 38990000.00, 43990000.00, 11, 3249000.00, 8, 4.80, 256, 1, 1, '[\"https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1200&q=80\"]', NULL, '[\"Trả góp 0%\", \"Freeship\"]', NULL, 'active', '2025-12-25 02:25:39.441', '2025-12-25 02:25:39.441'),
 (135, 4, 'Laptop Acer Swift Go 14 OLED', 'laptop-acer-swift-go-14-oled', 'AC-SWGO14', 'Acer', 18990000.00, 21990000.00, 14, NULL, 19, 4.60, 173, 1, 0, '[\"https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=1200&q=80\"]', NULL, '[\"Freeship\", \"Mới\"]', NULL, 'active', '2025-12-25 02:25:39.441', '2025-12-25 02:25:39.441'),
@@ -642,6 +653,36 @@ INSERT INTO `search_terms` (`id`, `userId`, `scope`, `term`, `createdAt`, `updat
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `shipping_methods`
+--
+
+CREATE TABLE `shipping_methods` (
+  `id` bigint(20) NOT NULL,
+  `code` varchar(50) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `type` enum('DELIVERY','PICKUP') NOT NULL,
+  `base_fee` int(11) NOT NULL DEFAULT 0,
+  `eta_text` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `sort_order` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `shipping_methods`
+--
+
+INSERT INTO `shipping_methods` (`id`, `code`, `name`, `type`, `base_fee`, `eta_text`, `is_active`, `sort_order`, `created_at`, `updated_at`) VALUES
+(1, 'standard', 'Giao hàng tiêu chuẩn', 'DELIVERY', 30000, 'Giao trong vòng 3 ngày', 1, 1, '2026-01-09 08:14:16', '2026-01-09 08:39:05'),
+(2, 'fast', 'Giao hàng nhanh (24h)', 'DELIVERY', 50000, 'Giao trong vòng 24h', 1, 2, '2026-01-09 08:14:16', '2026-01-09 08:39:19'),
+(3, 'store', 'Nhận tại cửa hàng', 'PICKUP', 0, 'Sẵn sàng sau 2 giờ', 1, 3, '2026-01-09 08:14:16', '2026-01-09 08:39:22'),
+(4, 'sieutochn', 'Siêu tốc promax Hà Nội', 'DELIVERY', 80000, 'Giao trong vòng 4h', 1, 4, '2026-01-09 08:35:37', '2026-01-09 08:39:24'),
+(5, 'giao-hang-cham', 'Giao hàng chậm', 'DELIVERY', 0, 'Giao trong vòng 10 ngày', 1, 0, '2026-01-09 08:40:39', '2026-01-09 08:40:39');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `users`
 --
 
@@ -665,7 +706,7 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `fullName`, `email`, `phone`, `passwordHash`, `status`, `role`, `avatarUrl`, `lastLoginAt`, `createdAt`, `updatedAt`) VALUES
 (1, 'QTV', 'admin@admin.com', '0912345678', '$2b$10$us3uVT6y7erBPZpP6Fsbiuyfq/cDN1w953UuemuVdgSinKUR9I.2e', 'active', 'admin', NULL, NULL, '2025-12-24 13:33:48.900', '2026-01-06 22:08:27.486'),
-(2, 'Nguyễn Văn An', 'nguyenvana@gmail.com', '0555666777', '$2b$10$us3uVT6y7erBPZpP6Fsbiuyfq/cDN1w953UuemuVdgSinKUR9I.2e', 'active', 'customer', NULL, '2026-01-06 21:24:44.757', '2025-12-24 15:57:17.000', '2026-01-06 21:24:44.000');
+(2, 'Nguyễn Văn An', 'nguyenvana@gmail.com', '0555666777', '$2b$10$us3uVT6y7erBPZpP6Fsbiuyfq/cDN1w953UuemuVdgSinKUR9I.2e', 'active', 'customer', NULL, '2026-01-09 15:22:35.929', '2025-12-24 15:57:17.000', '2026-01-09 15:22:35.000');
 
 -- --------------------------------------------------------
 
@@ -789,6 +830,13 @@ ALTER TABLE `search_terms`
   ADD KEY `idx_search_user` (`userId`);
 
 --
+-- Indexes for table `shipping_methods`
+--
+ALTER TABLE `shipping_methods`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `code` (`code`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -841,19 +889,19 @@ ALTER TABLE `notifications`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
 
 --
 -- AUTO_INCREMENT for table `order_status_history`
 --
 ALTER TABLE `order_status_history`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -878,6 +926,12 @@ ALTER TABLE `promotion_items`
 --
 ALTER TABLE `search_terms`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `shipping_methods`
+--
+ALTER TABLE `shipping_methods`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `users`
