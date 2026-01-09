@@ -20,8 +20,8 @@ const Order = sequelize.define(
       defaultValue: "pending",
     },
 
-    shippingMethod: { type: DataTypes.ENUM("standard", "fast", "store"), allowNull: false, defaultValue: "standard" },
-    shippingFee: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
+    shippingMethod: { type: DataTypes.STRING(50), allowNull: false, defaultValue: "standard" },
+    shippingFee: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 
     subtotal: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
     discountTotal: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },

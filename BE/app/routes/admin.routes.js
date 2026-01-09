@@ -42,5 +42,12 @@ router.post("/categories", adminController.createCategory);
 router.put("/categories/:id", adminController.updateCategory);
 router.delete("/categories/:id", adminController.deleteCategory);
 
-module.exports = router;
+// Shipping methods management
+router.get("/shipping-methods", adminController.getShippingMethods);
+router.post("/shipping-methods", adminController.createShippingMethod);
+router.put("/shipping-methods/:id", adminController.updateShippingMethod);
+router.patch("/shipping-methods/:id/toggle", adminController.toggleShippingMethod);
+router.patch("/shipping-methods/reorder", adminController.reorderShippingMethods);
+router.delete("/shipping-methods/:id", adminController.deleteShippingMethod);
 
+module.exports = router;

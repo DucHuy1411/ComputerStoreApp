@@ -64,6 +64,20 @@ export const apiCreateAdminCategory = (payload) => api.post('/admin/categories',
 export const apiUpdateAdminCategory = (id, payload) => api.put(`/admin/categories/${id}`, payload).then((r) => r.data);
 export const apiDeleteAdminCategory = (id) => api.delete(`/admin/categories/${id}`).then((r) => r.data);
 
+// Admin Shipping Methods
+export const apiGetAdminShippingMethods = (params) =>
+  api.get('/admin/shipping-methods', { params }).then((r) => r.data);
+export const apiCreateAdminShippingMethod = (payload) =>
+  api.post('/admin/shipping-methods', payload).then((r) => r.data);
+export const apiUpdateAdminShippingMethod = (id, payload) =>
+  api.put(`/admin/shipping-methods/${id}`, payload).then((r) => r.data);
+export const apiToggleAdminShippingMethod = (id) =>
+  api.patch(`/admin/shipping-methods/${id}/toggle`).then((r) => r.data);
+export const apiReorderAdminShippingMethods = (payload) =>
+  api.patch('/admin/shipping-methods/reorder', payload).then((r) => r.data);
+export const apiDeleteAdminShippingMethod = (id) =>
+  api.delete(`/admin/shipping-methods/${id}`).then((r) => r.data);
+
 // Promotions
 export const apiGetPromotions = (params) => api.get('/promotions', { params }).then((r) => r.data);
 export const apiGetPromotion = (id) => api.get(`/promotions/${id}`).then((r) => r.data);
@@ -73,4 +87,3 @@ export const apiDeletePromotion = (id) => api.delete(`/promotions/${id}`).then((
 
 // Dashboard Stats
 export const apiGetDashboardStats = () => api.get('/admin/dashboard/stats').then((r) => r.data);
-

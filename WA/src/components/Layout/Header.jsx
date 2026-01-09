@@ -7,6 +7,7 @@ const pageTitles = {
   '/products': 'Quản lý Sản phẩm',
   '/orders': 'Quản lý Đơn hàng',
   '/users': 'Quản lý Khách hàng',
+  '/shipping-methods': 'Phương thức vận chuyển',
 };
 
 export default function Header() {
@@ -58,6 +59,5 @@ export default function Header() {
     </header>
   );
 }
-
 
 

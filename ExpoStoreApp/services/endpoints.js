@@ -63,6 +63,10 @@ export const apiPromotions = (params) =>
 export const apiPromotionItems = (id) =>
   api.get(`/promotions/${id}/items`).then((r) => r.data);
 
+// SHIPPING
+export const apiShippingOptions = () =>
+  api.get('/shipping/options').then((r) => r.data);
+
 // SEARCH
 export const apiTrends = () => api.get('/search/trends').then((r) => r.data);
 export const apiRecentSearch = () =>

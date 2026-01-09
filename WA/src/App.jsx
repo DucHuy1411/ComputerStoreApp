@@ -10,6 +10,7 @@ import Promotions from './pages/Promotions';
 import PromotionItems from './pages/PromotionItems';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import ShippingMethods from './pages/ShippingMethods';
 
 function App() {
   return (
@@ -78,6 +79,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/shipping-methods"
+            element={
+              <ProtectedRoute>
+                <ShippingMethods />
               </ProtectedRoute>
             }
           />

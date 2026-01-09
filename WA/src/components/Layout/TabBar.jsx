@@ -5,6 +5,7 @@ import {
   ShoppingBagIcon,
   UsersIcon,
   TagIcon,
+  TruckIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import {
@@ -13,6 +14,7 @@ import {
   ShoppingBagIcon as ShoppingBagIconSolid,
   UsersIcon as UsersIconSolid,
   TagIcon as TagIconSolid,
+  TruckIcon as TruckIconSolid,
   Cog6ToothIcon as Cog6ToothIconSolid,
 } from '@heroicons/react/24/solid';
 
@@ -46,6 +48,12 @@ const tabs = [
     href: '/users',
     icon: UsersIcon,
     iconSolid: UsersIconSolid,
+  },
+  {
+    name: 'Vận chuyển',
+    href: '/shipping-methods',
+    icon: TruckIcon,
+    iconSolid: TruckIconSolid,
   },
   {
     name: 'Cài đặt',
@@ -90,4 +98,3 @@ export default function TabBar() {
     </nav>
   );
 }
-

@@ -1,6 +1,20 @@
 const { sequelize, Order, Product, User, OrderItem, Promotion, PromotionItem, Category } = require("../models");
-const { Op, fn, col, literal } = require("sequelize");
+const { Op, fn, col, literal, QueryTypes } = require("sequelize");
 const bcrypt = require("bcryptjs");
+
+const parseBool = (v) => {
+  if (v === undefined || v === null) return undefined;
+  if (typeof v === "boolean") return v;
+  const s = String(v).trim().toLowerCase();
+  if (["true", "1", "yes"].includes(s)) return true;
+  if (["false", "0", "no"].includes(s)) return false;
+  return undefined;
+};
+
+const normalizeCode = (v) => String(v || "").trim().toLowerCase();
+const isValidCode = (v) => /^[a-z0-9-]+$/.test(v);
+const normalizeType = (v) => String(v || "").trim().toUpperCase();
+const SHIPPING_TYPES = ["DELIVERY", "PICKUP"];
 
 class AdminController {
   /**
@@ -1507,6 +1521,351 @@ class AdminController {
       return res.json({ message: "Promotion item deleted successfully" });
     } catch (error) {
       console.error("Admin delete promotion item error:", error);
+      return res.status(500).json({
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * GET /admin/shipping-methods
+   * Lấy danh sách phương thức vận chuyển cho admin
+   */
+  async getShippingMethods(req, res) {
+    try {
+      const {
+        q,
+        type,
+        is_active,
+        isActive,
+        sort_order,
+        limit = 100,
+        offset = 0,
+      } = req.query;
+
+      const clauses = [];
+      const replacements = [];
+
+      const isActiveValue = parseBool(is_active !== undefined ? is_active : isActive);
+      if (isActiveValue !== undefined) {
+        clauses.push("is_active = ?");
+        replacements.push(isActiveValue ? 1 : 0);
+      }
+
+      if (type) {
+        const typeValue = normalizeType(type);
+        if (SHIPPING_TYPES.includes(typeValue)) {
+          clauses.push("type = ?");
+          replacements.push(typeValue);
+        }
+      }
+
+      if (q) {
+        const keyword = `%${String(q).trim()}%`;
+        clauses.push("(name LIKE ? OR code LIKE ?)");
+        replacements.push(keyword, keyword);
+      }
+
+      const whereSql = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+      const sortDir = String(sort_order || "asc").toLowerCase() === "desc" ? "DESC" : "ASC";
+      const orderSql = `ORDER BY sort_order ${sortDir}, id ASC`;
+
+      const rows = await sequelize.query(
+        `SELECT id, code, name, type, base_fee, eta_text, sort_order, is_active
+         FROM shipping_methods
+         ${whereSql}
+         ${orderSql}
+         LIMIT ? OFFSET ?`,
+        {
+          replacements: [...replacements, Math.min(Number(limit) || 100, 200), Number(offset) || 0],
+          type: QueryTypes.SELECT,
+        }
+      );
+
+      return res.json({ shippingMethods: rows });
+    } catch (error) {
+      console.error("Admin get shipping methods error:", error);
+      return res.status(500).json({
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * POST /admin/shipping-methods
+   * Tạo phương thức vận chuyển
+   */
+  async createShippingMethod(req, res) {
+    try {
+      const { code, name, type, base_fee, eta_text, sort_order, is_active } = req.body || {};
+
+      const codeRaw = String(code || "").trim();
+      if (!codeRaw) return res.status(400).json({ message: "Code is required" });
+
+      const codeValue = normalizeCode(codeRaw);
+      if (codeValue !== codeRaw || !isValidCode(codeValue)) {
+        return res.status(400).json({ message: "Code must be lowercase and contain only a-z, 0-9, or '-'" });
+      }
+
+      const nameValue = String(name || "").trim();
+      if (!nameValue) return res.status(400).json({ message: "Name is required" });
+
+      const typeValue = normalizeType(type);
+      if (!SHIPPING_TYPES.includes(typeValue)) {
+        return res.status(400).json({ message: "Invalid type. Must be DELIVERY or PICKUP" });
+      }
+
+      const baseFee = Number(base_fee);
+      if (!Number.isFinite(baseFee) || baseFee < 0) {
+        return res.status(400).json({ message: "base_fee must be a number >= 0" });
+      }
+
+      const sortOrder = sort_order !== undefined ? Number(sort_order) : 0;
+      if (!Number.isFinite(sortOrder)) {
+        return res.status(400).json({ message: "sort_order must be a number" });
+      }
+
+      const isActiveValue = parseBool(is_active);
+      const active = isActiveValue !== undefined ? isActiveValue : true;
+
+      const existed = await sequelize.query(
+        "SELECT id FROM shipping_methods WHERE code = ? LIMIT 1",
+        { replacements: [codeValue], type: QueryTypes.SELECT }
+      );
+      if (existed.length > 0) {
+        return res.status(409).json({ message: "Code already exists" });
+      }
+
+      await sequelize.query(
+        "INSERT INTO shipping_methods (code, name, type, base_fee, eta_text, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        {
+          replacements: [
+            codeValue,
+            nameValue,
+            typeValue,
+            baseFee,
+            eta_text ? String(eta_text).trim() : null,
+            sortOrder,
+            active ? 1 : 0,
+          ],
+        }
+      );
+
+      const createdRows = await sequelize.query(
+        "SELECT id, code, name, type, base_fee, eta_text, sort_order, is_active FROM shipping_methods WHERE code = ? LIMIT 1",
+        { replacements: [codeValue], type: QueryTypes.SELECT }
+      );
+
+      return res.status(201).json({ shippingMethod: createdRows[0] });
+    } catch (error) {
+      console.error("Admin create shipping method error:", error);
+      return res.status(500).json({
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * PUT /admin/shipping-methods/:id
+   * Cập nhật phương thức vận chuyển
+   */
+  async updateShippingMethod(req, res) {
+    try {
+      const { id } = req.params;
+      const { code, name, type, base_fee, eta_text, sort_order, is_active } = req.body || {};
+
+      const existingRows = await sequelize.query(
+        "SELECT id, code, name, type, base_fee, eta_text, sort_order, is_active FROM shipping_methods WHERE id = ? LIMIT 1",
+        { replacements: [id], type: QueryTypes.SELECT }
+      );
+      const existing = existingRows[0];
+      if (!existing) return res.status(404).json({ message: "Shipping method not found" });
+
+      const updates = [];
+      const replacements = [];
+
+      if (code !== undefined) {
+        const codeRaw = String(code || "").trim();
+        if (!codeRaw) return res.status(400).json({ message: "Code is required" });
+        const codeValue = normalizeCode(codeRaw);
+        if (codeValue !== codeRaw || !isValidCode(codeValue)) {
+          return res.status(400).json({ message: "Code must be lowercase and contain only a-z, 0-9, or '-'" });
+        }
+        const existed = await sequelize.query(
+          "SELECT id FROM shipping_methods WHERE code = ? AND id <> ? LIMIT 1",
+          { replacements: [codeValue, id], type: QueryTypes.SELECT }
+        );
+        if (existed.length > 0) {
+          return res.status(409).json({ message: "Code already exists" });
+        }
+        updates.push("code = ?");
+        replacements.push(codeValue);
+      }
+
+      if (name !== undefined) {
+        const nameValue = String(name || "").trim();
+        if (!nameValue) return res.status(400).json({ message: "Name is required" });
+        updates.push("name = ?");
+        replacements.push(nameValue);
+      }
+
+      if (type !== undefined) {
+        const typeValue = normalizeType(type);
+        if (!SHIPPING_TYPES.includes(typeValue)) {
+          return res.status(400).json({ message: "Invalid type. Must be DELIVERY or PICKUP" });
+        }
+        updates.push("type = ?");
+        replacements.push(typeValue);
+      }
+
+      if (base_fee !== undefined) {
+        const baseFee = Number(base_fee);
+        if (!Number.isFinite(baseFee) || baseFee < 0) {
+          return res.status(400).json({ message: "base_fee must be a number >= 0" });
+        }
+        updates.push("base_fee = ?");
+        replacements.push(baseFee);
+      }
+
+      if (eta_text !== undefined) {
+        updates.push("eta_text = ?");
+        replacements.push(eta_text ? String(eta_text).trim() : null);
+      }
+
+      if (sort_order !== undefined) {
+        const sortOrder = Number(sort_order);
+        if (!Number.isFinite(sortOrder)) {
+          return res.status(400).json({ message: "sort_order must be a number" });
+        }
+        updates.push("sort_order = ?");
+        replacements.push(sortOrder);
+      }
+
+      if (is_active !== undefined) {
+        const active = parseBool(is_active);
+        if (active === undefined) return res.status(400).json({ message: "is_active must be boolean" });
+        updates.push("is_active = ?");
+        replacements.push(active ? 1 : 0);
+      }
+
+      if (updates.length === 0) {
+        return res.json({ shippingMethod: existing });
+      }
+
+      await sequelize.query(
+        `UPDATE shipping_methods SET ${updates.join(", ")} WHERE id = ?`,
+        { replacements: [...replacements, id] }
+      );
+
+      const updatedRows = await sequelize.query(
+        "SELECT id, code, name, type, base_fee, eta_text, sort_order, is_active FROM shipping_methods WHERE id = ? LIMIT 1",
+        { replacements: [id], type: QueryTypes.SELECT }
+      );
+
+      return res.json({ shippingMethod: updatedRows[0] });
+    } catch (error) {
+      console.error("Admin update shipping method error:", error);
+      return res.status(500).json({
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * PATCH /admin/shipping-methods/:id/toggle
+   * Bật/tắt phương thức vận chuyển
+   */
+  async toggleShippingMethod(req, res) {
+    try {
+      const { id } = req.params;
+
+      const rows = await sequelize.query(
+        "SELECT id, is_active FROM shipping_methods WHERE id = ? LIMIT 1",
+        { replacements: [id], type: QueryTypes.SELECT }
+      );
+      const existing = rows[0];
+      if (!existing) return res.status(404).json({ message: "Shipping method not found" });
+
+      const nextActive = existing.is_active ? 0 : 1;
+      await sequelize.query(
+        "UPDATE shipping_methods SET is_active = ? WHERE id = ?",
+        { replacements: [nextActive, id] }
+      );
+
+      const updatedRows = await sequelize.query(
+        "SELECT id, code, name, type, base_fee, eta_text, sort_order, is_active FROM shipping_methods WHERE id = ? LIMIT 1",
+        { replacements: [id], type: QueryTypes.SELECT }
+      );
+
+      return res.json({ shippingMethod: updatedRows[0] });
+    } catch (error) {
+      console.error("Admin toggle shipping method error:", error);
+      return res.status(500).json({
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * PATCH /admin/shipping-methods/reorder
+   * Cập nhật sort_order hàng loạt
+   */
+  async reorderShippingMethods(req, res) {
+    try {
+      const items = Array.isArray(req.body?.items) ? req.body.items : [];
+      if (items.length === 0) return res.status(400).json({ message: "items is required" });
+
+      const t = await sequelize.transaction();
+      try {
+        for (const item of items) {
+          const id = Number(item?.id);
+          const sortOrder = Number(item?.sort_order ?? item?.sortOrder);
+          if (!Number.isFinite(id) || !Number.isFinite(sortOrder)) {
+            await t.rollback();
+            return res.status(400).json({ message: "Invalid reorder payload" });
+          }
+          await sequelize.query(
+            "UPDATE shipping_methods SET sort_order = ? WHERE id = ?",
+            { replacements: [sortOrder, id], transaction: t }
+          );
+        }
+        await t.commit();
+      } catch (e) {
+        await t.rollback();
+        throw e;
+      }
+
+      return res.json({ message: "Reordered successfully" });
+    } catch (error) {
+      console.error("Admin reorder shipping methods error:", error);
+      return res.status(500).json({
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * DELETE /admin/shipping-methods/:id
+   * Xóa phương thức vận chuyển (soft delete)
+   */
+  async deleteShippingMethod(req, res) {
+    try {
+      const { id } = req.params;
+
+      const rows = await sequelize.query(
+        "SELECT id FROM shipping_methods WHERE id = ? LIMIT 1",
+        { replacements: [id], type: QueryTypes.SELECT }
+      );
+      if (!rows[0]) return res.status(404).json({ message: "Shipping method not found" });
+
+      await sequelize.query(
+        "UPDATE shipping_methods SET is_active = 0 WHERE id = ?",
+        { replacements: [id] }
+      );
+
+      return res.json({ message: "Shipping method disabled" });
+    } catch (error) {
+      console.error("Admin delete shipping method error:", error);
       return res.status(500).json({
         message: error.message || "Internal server error",
       });

@@ -1,6 +1,15 @@
 const { sequelize, Order, OrderItem, OrderStatusHistory, CartItem, Product, Address, Promotion } = require("../models");
-const { Op } = require("sequelize");
+const { Op, QueryTypes } = require("sequelize");
 const { genOrderCode } = require("../utils/order.util");
+
+const getActiveShippingMethod = async (code) => {
+  if (!code) return null;
+  const rows = await sequelize.query(
+    "SELECT code, base_fee FROM shipping_methods WHERE code = ? AND is_active = 1 LIMIT 1",
+    { replacements: [code], type: QueryTypes.SELECT }
+  );
+  return rows[0] || null;
+};
 
 class OrdersController {
   // GET /orders (filters: status, q, minTotal, maxTotal, fromDate, toDate, sort)
@@ -66,7 +75,8 @@ class OrdersController {
   // body: { addressId, shippingMethod, promotionCode }
   async checkoutFromCart(req, res) {
     const userId = req.user.id;
-    const { addressId, shippingMethod = "standard", promotionCode } = req.body || {};
+    const { addressId, shippingMethod, promotionCode } = req.body || {};
+    if (!shippingMethod) return res.status(400).json({ message: "shippingMethod required" });
 
     const address = await Address.findOne({ where: { id: addressId, userId } });
     if (!address) return res.status(400).json({ message: "Invalid addressId" });
@@ -81,6 +91,9 @@ class OrdersController {
     if (promotionCode) {
       promo = await Promotion.findOne({ where: { type: "voucher", isActive: true, code: promotionCode } });
     }
+
+    const shipping = await getActiveShippingMethod(shippingMethod);
+    if (!shipping) return res.status(400).json({ message: "Invalid shippingMethod" });
 
     const t = await sequelize.transaction();
     try {
@@ -119,7 +132,7 @@ class OrdersController {
         }
       }
 
-      const shippingFee = shippingMethod === "fast" ? 50000 : 0;
+      const shippingFee = Number(shipping.base_fee || 0);
       const total = Math.max(0, subtotal - discountTotal) + shippingFee;
 
       const order = await Order.create(
@@ -131,7 +144,7 @@ class OrdersController {
           shipPhone: address.recipientPhone,
           shipAddressText,
           status: "pending",
-          shippingMethod,
+          shippingMethod: shipping.code,
           shippingFee,
           subtotal,
           discountTotal,
@@ -174,8 +187,9 @@ class OrdersController {
   // body: { productId, qty, addressId, shippingMethod, promotionCode }
   async buyNow(req, res) {
     const userId = req.user.id;
-    const { productId, qty = 1, addressId, shippingMethod = "standard", promotionCode } = req.body || {};
+    const { productId, qty = 1, addressId, shippingMethod, promotionCode } = req.body || {};
     if (!productId || !addressId) return res.status(400).json({ message: "productId and addressId required" });
+    if (!shippingMethod) return res.status(400).json({ message: "shippingMethod required" });
 
     const [product, address] = await Promise.all([
       Product.findByPk(productId),
@@ -186,6 +200,9 @@ class OrdersController {
 
     let promo = null;
     if (promotionCode) promo = await Promotion.findOne({ where: { type: "voucher", isActive: true, code: promotionCode } });
+
+    const shipping = await getActiveShippingMethod(shippingMethod);
+    if (!shipping) return res.status(400).json({ message: "Invalid shippingMethod" });
 
     const t = await sequelize.transaction();
     try {
@@ -210,7 +227,7 @@ class OrdersController {
         if (promo.discountType === "percent") discountTotal = Math.floor((subtotal * Number(promo.discountValue || 0)) / 100);
       }
 
-      const shippingFee = shippingMethod === "fast" ? 50000 : 0;
+      const shippingFee = Number(shipping.base_fee || 0);
       const total = Math.max(0, subtotal - discountTotal) + shippingFee;
 
       const order = await Order.create(
@@ -222,7 +239,7 @@ class OrdersController {
           shipPhone: address.recipientPhone,
           shipAddressText,
           status: "pending",
-          shippingMethod,
+          shippingMethod: shipping.code,
           shippingFee,
           subtotal,
           discountTotal,

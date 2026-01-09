@@ -22,6 +22,7 @@ import {
   apiInitiateVnpayPayment,
   apiCheckPaymentStatus,
   apiOrderDetail,
+  apiShippingOptions,
 } from '../services/endpoints';
 
 import styles, { COLORS } from '../styles/CheckoutStyle';
@@ -85,7 +86,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const product = route?.params?.product;
   const qty = route?.params?.qty;
 
-  const [shipMethod, setShipMethod] = useState('standard');
+  const [shipMethod, setShipMethod] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cod'); // "cod" hoặc "vnpay"
   const [productsOpen, setProductsOpen] = useState(false);
 
@@ -93,6 +94,9 @@ export default function CheckoutScreen({ navigation, route }) {
   const [addrLoading, setAddrLoading] = useState(true);
   const [addrBusyId, setAddrBusyId] = useState(null);
   const [addresses, setAddresses] = useState([]);
+
+  const [shippingLoading, setShippingLoading] = useState(true);
+  const [shippingOptions, setShippingOptions] = useState([]);
 
   const [placing, setPlacing] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -108,33 +112,6 @@ export default function CheckoutScreen({ navigation, route }) {
       { id: 2, label: 'Địa chỉ', done: true },
       { id: 3, label: 'Thanh toán', done: false, active: true },
       { id: 4, label: 'Hoàn tất', done: false },
-    ],
-    [],
-  );
-
-  const shippingOptions = useMemo(
-    () => [
-      {
-        id: 'standard',
-        title: 'Giao hàng tiêu chuẩn',
-        sub: 'Dự kiến giao: 25 - 27 Tháng 12',
-        price: 'Miễn phí',
-        free: true,
-      },
-      {
-        id: 'fast',
-        title: 'Giao hàng nhanh (24h)',
-        sub: 'Dự kiến giao: 23 Tháng 12',
-        price: '50.000đ',
-        free: false,
-      },
-      {
-        id: 'store',
-        title: 'Nhận tại cửa hàng',
-        sub: 'Sẵn sàng sau 2 giờ',
-        price: 'Miễn phí',
-        free: true,
-      },
     ],
     [],
   );
@@ -164,15 +141,43 @@ export default function CheckoutScreen({ navigation, route }) {
     return [];
   }, [order?.products, product, qty]);
 
-  const totalText = useMemo(() => {
-    if (order?.total) return order.total;
-    if (order?.totalNumber != null) return formatVnd(order.totalNumber);
+  const subtotalNumber = useMemo(() => {
+    if (order?.subtotalNumber != null)
+      return Number(order.subtotalNumber || 0);
+    if (order?.products?.length) {
+      return order.products.reduce((sum, p) => {
+        const lineTotal =
+          Number(p.lineTotal ?? NaN) ||
+          Number(p.priceNumber ?? NaN) * Number(p.qty ?? 1) ||
+          Number(p.price ?? 0) * Number(p.qty ?? 1) ||
+          0;
+        return sum + lineTotal;
+      }, 0);
+    }
     if (product)
-      return formatVnd(Number(product.price || 0) * Number(qty || 1));
-    return '0đ';
+      return Number(product.price || 0) * Number(qty || 1);
+    return 0;
   }, [order, product, qty]);
 
-  const canPlace = !!selectedAddress && products.length > 0 && !placing;
+  const selectedShipping = useMemo(
+    () => shippingOptions.find((o) => o.code === shipMethod) || null,
+    [shippingOptions, shipMethod],
+  );
+
+  const shippingFee = useMemo(
+    () => Number(selectedShipping?.fee || 0),
+    [selectedShipping],
+  );
+
+  const totalNumber = useMemo(
+    () => subtotalNumber + shippingFee,
+    [subtotalNumber, shippingFee],
+  );
+
+  const totalText = useMemo(() => formatVnd(totalNumber), [totalNumber]);
+
+  const canPlace =
+    !!selectedAddress && products.length > 0 && !!shipMethod && !placing;
 
   const loadAddresses = useCallback(async () => {
     try {
@@ -201,6 +206,42 @@ export default function CheckoutScreen({ navigation, route }) {
     useCallback(() => {
       loadAddresses();
     }, [loadAddresses]),
+  );
+
+  const loadShippingOptions = useCallback(async () => {
+    try {
+      setShippingLoading(true);
+      const res = await apiShippingOptions();
+      const list = Array.isArray(res?.options)
+        ? res.options
+        : Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res)
+        ? res
+        : [];
+
+      setShippingOptions(list);
+      setShipMethod((cur) => {
+        if (cur && list.some((o) => o.code === cur)) return cur;
+        return list[0]?.code || null;
+      });
+    } catch (e) {
+      setShippingOptions([]);
+      setShipMethod(null);
+      Alert.alert('Lỗi', e?.message || 'Không tải được phương thức vận chuyển');
+    } finally {
+      setShippingLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadShippingOptions();
+  }, [loadShippingOptions]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadShippingOptions();
+    }, [loadShippingOptions]),
   );
 
   const setDefaultAddress = async (id) => {
@@ -355,9 +396,9 @@ export default function CheckoutScreen({ navigation, route }) {
               address: selectedAddress?.address,
             },
             products: order?.products || [],
-            subtotalNumber: order?.subtotalNumber,
-            shippingNumber: order?.shippingNumber,
-            totalNumber: order?.totalNumber,
+            subtotalNumber,
+            shippingNumber: shippingFee,
+            totalNumber,
           },
         });
       }
@@ -389,9 +430,9 @@ export default function CheckoutScreen({ navigation, route }) {
               address: selectedAddress?.address,
             },
             products: order?.products || [],
-            subtotalNumber: order?.subtotalNumber,
-            shippingNumber: order?.shippingNumber,
-            totalNumber: order?.totalNumber,
+            subtotalNumber,
+            shippingNumber: shippingFee,
+            totalNumber,
           },
         });
       } else {
@@ -484,25 +525,27 @@ export default function CheckoutScreen({ navigation, route }) {
   );
 
   const ShippingCard = ({ opt }) => {
-    const selected = shipMethod === opt.id;
+    const selected = shipMethod === opt.code;
+    const feeNumber = Number(opt.fee || 0);
+    const feeText = feeNumber === 0 ? 'Miễn phí' : formatVnd(feeNumber);
     return (
       <Pressable
         style={[styles.shipItem, selected && styles.shipItemActive]}
-        onPress={() => setShipMethod(opt.id)}>
+        onPress={() => setShipMethod(opt.code)}>
         <Ionicons
           name={selected ? 'radio-button-on' : 'radio-button-off'}
           size={22}
           color={selected ? COLORS.BLUE : COLORS.FUTURE_BORDER}
         />
         <View style={{ flex: 1 }}>
-          <Text style={styles.shipTitle}>{opt.title}</Text>
-          <Text style={styles.shipSub}>{opt.sub}</Text>
+          <Text style={styles.shipTitle}>{opt.title || 'Vận chuyển'}</Text>
+          {!!opt.etaText && <Text style={styles.shipSub}>{opt.etaText}</Text>}
           <Text
             style={[
               styles.shipPrice,
-              opt.free ? { color: COLORS.GREEN } : { color: COLORS.BLUE },
+              feeNumber === 0 ? { color: COLORS.GREEN } : { color: COLORS.BLUE },
             ]}>
-            {opt.price}
+            {feeText}
           </Text>
         </View>
       </Pressable>
@@ -665,11 +708,29 @@ export default function CheckoutScreen({ navigation, route }) {
             </View>
           </View>
 
-          <View style={{ gap: 10 }}>
-            {shippingOptions.map((opt) => (
-              <ShippingCard key={opt.id} opt={opt} />
-            ))}
-          </View>
+          {shippingLoading ? (
+            <View style={styles.addrLoadingRow}>
+              <ActivityIndicator />
+              <Text style={styles.addrLoadingText}>Đang tải vận chuyển...</Text>
+            </View>
+          ) : shippingOptions.length > 0 ? (
+            <View style={{ gap: 10 }}>
+              {shippingOptions.map((opt) => (
+                <ShippingCard key={opt.code} opt={opt} />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.addrEmpty}>
+              <Ionicons
+                name="car-outline"
+                size={26}
+                color={COLORS.MUTED}
+              />
+              <Text style={styles.addrEmptyText}>
+                Chưa có phương thức vận chuyển
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.card}>
