@@ -8,6 +8,7 @@ import OrderDetailScreen from "../screens/OrderDetailScreen";
 import RecentlyViewedScreen from "../screens/RecentlyViewedScreen";
 import WishlistScreen from "../screens/WishlistScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
+import PaymentMethodsScreen from "../screens/PaymentMethodsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -21,6 +22,7 @@ export default function AccountStack() {
       <Stack.Screen name="RecentlyViewed" component={RecentlyViewedScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
     </Stack.Navigator>
   );
 }
