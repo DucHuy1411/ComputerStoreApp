@@ -8,7 +8,7 @@ import {
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
@@ -63,6 +63,5 @@ export default function Sidebar() {
     </div>
   );
 }
-
 
 

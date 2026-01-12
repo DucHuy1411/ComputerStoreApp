@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 const pageTitles = {
   '/': 'Dashboard',
@@ -59,5 +59,4 @@ export default function Header() {
     </header>
   );
 }
-
 

@@ -3,6 +3,8 @@ import api from './api';
 // Auth
 export const apiLogin = (payload) => api.post('/auth/login', payload).then((r) => r.data);
 export const apiRegister = (payload) => api.post('/auth/register', payload).then((r) => r.data);
+export const apiRegisterAdmin = (payload) => api.post('/auth/register-admin', payload).then((r) => r.data);
+export const apiMe = () => api.get('/users/me').then((r) => r.data);
 
 // Users
 export const apiGetUsers = (params) => api.get('/users', { params }).then((r) => r.data);

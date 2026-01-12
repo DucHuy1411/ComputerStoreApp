@@ -6,30 +6,79 @@ const { JWT_SECRET } = require("../middlewares/auth.middleware");
 class AuthController {
   // POST /auth/register
   async register(req, res) {
-    const { email, phone, password, fullName } = req.body || {};
-    if (!password || password.length < 6) return res.status(400).json({ message: "Password must be >= 6 chars" });
-    if (!email && !phone) return res.status(400).json({ message: "Email or phone is required" });
+    try {
+      const { email, phone, password, fullName } = req.body || {};
+      if (!password || password.length < 6) return res.status(400).json({ message: "Password must be >= 6 chars" });
+      if (!email && !phone) return res.status(400).json({ message: "Email or phone is required" });
 
-    const existed = await User.findOne({
-      where: email ? { email } : { phone },
-    });
-    if (existed) return res.status(409).json({ message: "Account already exists" });
+      const existed = await User.findOne({
+        where: email ? { email } : { phone },
+      });
+      if (existed) return res.status(409).json({ message: "Account already exists" });
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      fullName: fullName || null,
-      email: email || null,
-      phone: phone || null,
-      passwordHash,
-      status: "active",
-      role: "customer",
-    });
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = await User.create({
+        fullName: fullName || null,
+        email: email || null,
+        phone: phone || null,
+        passwordHash,
+        status: "active",
+        role: "customer",
+      });
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
-    return res.json({
-      token,
-      user: { id: user.id, fullName: user.fullName, email: user.email, phone: user.phone, role: user.role },
-    });
+      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
+      return res.json({
+        token,
+        user: { id: user.id, fullName: user.fullName, email: user.email, phone: user.phone, role: user.role },
+      });
+    } catch (error) {
+      if (error?.name === "SequelizeUniqueConstraintError") {
+        return res.status(409).json({ message: "Account already exists" });
+      }
+      console.error("Register error:", error);
+      return res.status(500).json({ message: error.message || "Internal server error" });
+    }
+  }
+
+  // POST /auth/register-admin
+  async registerAdmin(req, res) {
+    try {
+      const { email, phone, password, fullName, secret } = req.body || {};
+      if (!password || password.length < 6) return res.status(400).json({ message: "Password must be >= 6 chars" });
+      if (!email && !phone) return res.status(400).json({ message: "Email or phone is required" });
+
+      const adminSecret = process.env.ADMIN_REGISTER_SECRET;
+      if (!adminSecret || secret !== adminSecret) {
+        return res.status(403).json({ message: "Invalid admin register secret" });
+      }
+
+      const existed = await User.findOne({
+        where: email ? { email } : { phone },
+      });
+      if (existed) return res.status(409).json({ message: "Account already exists" });
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = await User.create({
+        fullName: fullName || null,
+        email: email || null,
+        phone: phone || null,
+        passwordHash,
+        status: "active",
+        role: "admin",
+      });
+
+      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
+      return res.json({
+        token,
+        user: { id: user.id, fullName: user.fullName, email: user.email, phone: user.phone, role: user.role },
+      });
+    } catch (error) {
+      if (error?.name === "SequelizeUniqueConstraintError") {
+        return res.status(409).json({ message: "Account already exists" });
+      }
+      console.error("Register admin error:", error);
+      return res.status(500).json({ message: error.message || "Internal server error" });
+    }
   }
 
   // POST /auth/login (identifier = email/phone)

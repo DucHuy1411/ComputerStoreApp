@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/useAuth';
 
 export default function Login() {
   const [phone, setPhone] = useState('0912345678');
@@ -20,15 +20,8 @@ export default function Login() {
       // Chuyển sang Dashboard ngay sau khi login thành công
       navigate('/', { replace: true });
     } catch (err) {
-      // Nếu backend chưa chạy, vẫn cho phép login để test UI
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network') || !err.response) {
-        // Login với mock data để test UI
-        try {
-          await login({ identifier: phone, password });
-          navigate('/', { replace: true });
-        } catch {
-          setError('Không thể kết nối đến server. Vui lòng kiểm tra lại.');
-        }
+        setError('Không thể kết nối đến server. Vui lòng kiểm tra lại.');
       } else {
         setError(err.response?.data?.message || 'Đăng nhập thất bại');
       }
@@ -93,9 +86,13 @@ export default function Login() {
               {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
           </div>
+          <div className="text-center">
+            <Link to="/register" className="text-sm text-primary-600 hover:text-primary-500">
+              Chưa có tài khoản? Đăng ký
+            </Link>
+          </div>
         </form>
       </div>
     </div>
   );
 }
-

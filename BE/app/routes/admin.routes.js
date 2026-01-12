@@ -4,50 +4,48 @@ const adminController = require("../controllers/admin.controller");
 const { auth } = require("../middlewares/auth.middleware");
 const { admin } = require("../middlewares/admin.middleware");
 
-// Tạm thời bỏ qua auth để test UI
-// router.get("/dashboard/stats", auth, admin, adminController.dashboardStats);
-router.get("/dashboard/stats", adminController.dashboardStats);
+router.get("/dashboard/stats", auth, admin, adminController.dashboardStats);
 
 // Orders management
-router.get("/orders", adminController.getOrders);
-router.get("/orders/:id", adminController.getOrderDetail);
-router.put("/orders/:id/status", adminController.updateOrderStatus);
-router.put("/orders/:id/payment-status", adminController.updatePaymentStatus);
+router.get("/orders", auth, admin, adminController.getOrders);
+router.get("/orders/:id", auth, admin, adminController.getOrderDetail);
+router.put("/orders/:id/status", auth, admin, adminController.updateOrderStatus);
+router.put("/orders/:id/payment-status", auth, admin, adminController.updatePaymentStatus);
 
 // Users management
-router.get("/users", adminController.getUsers);
-router.post("/users", adminController.createUser);
-router.put("/users/:id", adminController.updateUser);
-router.delete("/users/:id", adminController.deleteUser);
-router.patch("/users/:id/role", adminController.updateUserRole);
-router.patch("/users/:id/status", adminController.updateUserStatus);
+router.get("/users", auth, admin, adminController.getUsers);
+router.post("/users", auth, admin, adminController.createUser);
+router.put("/users/:id", auth, admin, adminController.updateUser);
+router.delete("/users/:id", auth, admin, adminController.deleteUser);
+router.patch("/users/:id/role", auth, admin, adminController.updateUserRole);
+router.patch("/users/:id/status", auth, admin, adminController.updateUserStatus);
 
 // Promotions management
-router.get("/promotions", adminController.getPromotions);
-router.get("/promotions/:id", adminController.getPromotionDetail);
-router.post("/promotions", adminController.createPromotion);
-router.put("/promotions/:id", adminController.updatePromotion);
-router.delete("/promotions/:id", adminController.deletePromotion);
-router.post("/promotions/:id/items", adminController.addPromotionItem);
-router.delete("/promotions/:id/items/:itemId", adminController.removePromotionItem);
+router.get("/promotions", auth, admin, adminController.getPromotions);
+router.get("/promotions/:id", auth, admin, adminController.getPromotionDetail);
+router.post("/promotions", auth, admin, adminController.createPromotion);
+router.put("/promotions/:id", auth, admin, adminController.updatePromotion);
+router.delete("/promotions/:id", auth, admin, adminController.deletePromotion);
+router.post("/promotions/:id/items", auth, admin, adminController.addPromotionItem);
+router.delete("/promotions/:id/items/:itemId", auth, admin, adminController.removePromotionItem);
 
 // Promotion Items management
-router.get("/promotion-items", adminController.getPromotionItems);
-router.put("/promotion-items/:id", adminController.updatePromotionItem);
-router.delete("/promotion-items/:id", adminController.deletePromotionItem);
+router.get("/promotion-items", auth, admin, adminController.getPromotionItems);
+router.put("/promotion-items/:id", auth, admin, adminController.updatePromotionItem);
+router.delete("/promotion-items/:id", auth, admin, adminController.deletePromotionItem);
 
 // Categories management
-router.get("/categories", adminController.getCategories);
-router.post("/categories", adminController.createCategory);
-router.put("/categories/:id", adminController.updateCategory);
-router.delete("/categories/:id", adminController.deleteCategory);
+router.get("/categories", auth, admin, adminController.getCategories);
+router.post("/categories", auth, admin, adminController.createCategory);
+router.put("/categories/:id", auth, admin, adminController.updateCategory);
+router.delete("/categories/:id", auth, admin, adminController.deleteCategory);
 
 // Shipping methods management
-router.get("/shipping-methods", adminController.getShippingMethods);
-router.post("/shipping-methods", adminController.createShippingMethod);
-router.put("/shipping-methods/:id", adminController.updateShippingMethod);
-router.patch("/shipping-methods/:id/toggle", adminController.toggleShippingMethod);
-router.patch("/shipping-methods/reorder", adminController.reorderShippingMethods);
-router.delete("/shipping-methods/:id", adminController.deleteShippingMethod);
+router.get("/shipping-methods", auth, admin, adminController.getShippingMethods);
+router.post("/shipping-methods", auth, admin, adminController.createShippingMethod);
+router.put("/shipping-methods/:id", auth, admin, adminController.updateShippingMethod);
+router.patch("/shipping-methods/:id/toggle", auth, admin, adminController.toggleShippingMethod);
+router.patch("/shipping-methods/reorder", auth, admin, adminController.reorderShippingMethods);
+router.delete("/shipping-methods/:id", auth, admin, adminController.deleteShippingMethod);
 
 module.exports = router;
