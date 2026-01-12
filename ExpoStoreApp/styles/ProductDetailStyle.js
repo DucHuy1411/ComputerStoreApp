@@ -173,6 +173,17 @@ const styles = StyleSheet.create({
     specK: { fontSize: 11.5, fontWeight: "800", color: COLORS.SUB },
     specV: { marginTop: 2, fontSize: 12.5, fontWeight: "900", color: COLORS.TEXT },
 
+    descBlock: {
+        marginTop: 14,
+        backgroundColor: COLORS.WHITE,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: COLORS.BORDER,
+        padding: 12,
+    },
+    descTitle: { fontSize: 13, fontWeight: "900", color: COLORS.TEXT, marginBottom: 6 },
+    descText: { fontSize: 13, fontWeight: "600", color: COLORS.SUB, lineHeight: 18 },
+
     qtyBlock: { marginTop: 14 },
     qtyLabel: { fontSize: 13, fontWeight: "900", color: COLORS.TEXT },
     qtyRow: { marginTop: 10, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

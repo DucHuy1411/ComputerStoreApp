@@ -9,20 +9,20 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, SimpleLineIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 
 import {
   apiCategoriesTree,
   apiProducts,
-  apiPromotions,
   apiPromotionItems,
   apiCart,
 } from "../services/endpoints";
+import { fetchFlashSales } from "../services/flashSale.service";
+import useNow from "../hooks/useNow";
+import FlashSaleTicker from "../components/FlashSaleTicker";
 
-import styles, { COLORS, BANNER_W } from "../styles/HomeStyle";
-
-const { TEXT, RED } = COLORS;
+import styles, { BANNER_W } from "../styles/HomeStyle";
 
 const formatVnd = (n) => {
   const s = Math.round(Number(n || 0)).toString();
@@ -36,6 +36,12 @@ const safeJsonParse = (s, fb) => {
   } catch {
     return fb;
   }
+};
+
+const parseMs = (v) => {
+  if (!v) return null;
+  const ms = new Date(v).getTime();
+  return Number.isNaN(ms) ? null : ms;
 };
 
 const normalizeImages = (p) => {
@@ -72,12 +78,25 @@ export default function HomeScreen({ navigation }) {
 
   const [categories, setCategories] = useState([]);
   const [flashSale, setFlashSale] = useState([]);
+  const [flashSales, setFlashSales] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
   const [cartCount, setCartCount] = useState(0);
 
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef(null);
+  const now = useNow();
+
+  const activeFlashSales = useMemo(() => {
+    const list = Array.isArray(flashSales) ? flashSales : [];
+    return list.filter((e) => {
+      const startMs = parseMs(e?.startAt);
+      const endMs = parseMs(e?.endAt);
+      if (startMs && now < startMs) return false;
+      if (endMs && now >= endMs) return false;
+      return true;
+    });
+  }, [flashSales, now]);
 
   const onBannerScroll = (e) => {
     const x = e.nativeEvent.contentOffset.x;
@@ -134,7 +153,7 @@ export default function HomeScreen({ navigation }) {
         pc: "desktop-outline",
         monitor: "tv-outline",
         keyboard: "keypad-outline",
-        mouse: "radio-button-on-outline", // mouse-outline không tồn tại trong Ionicons
+        mouse: "mouse", // mouse-outline không tồn tại trong Ionicons
         audio: "headset-outline",
       };
 
@@ -164,46 +183,65 @@ export default function HomeScreen({ navigation }) {
         (newRes?.products || []).map((p) => mapProduct(p))
       );
 
-      // Flash sale
-      const promos = await apiPromotions({ type: "flash_sale" });
-      const promo = promos?.promotions?.[0];
+      // Flash sale events
+      const events = await fetchFlashSales();
+      setFlashSales(Array.isArray(events) ? events : []);
 
-      if (promo?.id) {
-        const itemsRes = await apiPromotionItems(promo.id);
-        const items = itemsRes?.items || [];
+      const nowMs = Date.now();
+      const activeEvents = Array.isArray(events)
+        ? events.filter((e) => {
+            const startMs = parseMs(e?.startAt);
+            const endMs = parseMs(e?.endAt);
+            if (startMs && nowMs < startMs) return false;
+            if (endMs && nowMs >= endMs) return false;
+            return true;
+          })
+        : [];
 
-        setFlashSale(
-          items.slice(0, 10).map((it) => {
-            const base = it.product || it;
-
-            const mapped = mapProduct(base, {
-              discountPct: it.discountPct ?? base.discountPct,
-            });
-
-            const promoPrice = Number(it.price ?? base.price ?? mapped.priceValue);
-            const promoOldPrice = Number(it.oldPrice ?? base.oldPrice ?? mapped.oldPriceValue);
-            const baseImgs = normalizeImages(base);
-            const img = baseImgs[0] || mapped.img;
-
-            const discountPct = Number(it.discountPct ?? mapped.discountPct) || 0;
-
-            return {
-              ...mapped,
-              img,
-              images: baseImgs.length ? baseImgs : mapped.images,
-
-              priceValue: promoPrice,
-              oldPriceValue: promoOldPrice,
-
-              price: formatVnd(promoPrice),
-              oldPrice: promoOldPrice ? formatVnd(promoOldPrice) : "",
-              discount: discountPct ? `-${discountPct}%` : "",
-            };
+      if (activeEvents.length > 0) {
+        const itemsGroups = await Promise.all(
+          activeEvents.map(async (event) => {
+            try {
+              const itemsRes = await apiPromotionItems(event.id);
+              return itemsRes?.items || [];
+            } catch {
+              return [];
+            }
           })
         );
+
+        const merged = itemsGroups.flat().map((it) => {
+          const base = it.product || it;
+
+          const mapped = mapProduct(base, {
+            discountPct: it.discountPct ?? base.discountPct,
+          });
+
+          const promoPrice = Number(it.price ?? base.price ?? mapped.priceValue);
+          const promoOldPrice = Number(it.oldPrice ?? base.oldPrice ?? mapped.oldPriceValue);
+          const baseImgs = normalizeImages(base);
+          const img = baseImgs[0] || mapped.img;
+
+          const discountPct = Number(it.discountPct ?? mapped.discountPct) || 0;
+
+          return {
+            ...mapped,
+            promoId: it.promotionId,
+            img,
+            images: baseImgs.length ? baseImgs : mapped.images,
+
+            priceValue: promoPrice,
+            oldPriceValue: promoOldPrice,
+
+            price: formatVnd(promoPrice),
+            oldPrice: promoOldPrice ? formatVnd(promoOldPrice) : "",
+            discount: discountPct ? `-${discountPct}%` : "",
+          };
+        });
+
+        setFlashSale(merged);
       } else {
-        const saleRes = await apiProducts({ sort: "popular", limit: 10 });
-        setFlashSale((saleRes?.products || []).map((p) => mapProduct(p)));
+        setFlashSale([]);
       }
     } catch (e) {
       Alert.alert("Lỗi", e?.message || "Không tải được Home");
@@ -233,6 +271,15 @@ export default function HomeScreen({ navigation }) {
 
   const openSearch = () => navigation.navigate("Search");
   const openCart = () => navigation.navigate("Cart");
+  const openFlashSaleEvent = (event) => {
+    if (!navigation?.navigate) return;
+    const routes = navigation.getState?.().routeNames || [];
+    if (routes.includes("FlashSale")) {
+      navigation.navigate("FlashSale", { id: event?.id });
+      return;
+    }
+    navigation.navigate("Deals", { flashSaleId: event?.id });
+  };
 
   const openCategory = (c) => {
     navigation.navigate("Category", {
@@ -345,42 +392,51 @@ export default function HomeScreen({ navigation }) {
           })}
         </ScrollView>
 
-        {/* Flash Sale */}
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionLeft}>
-            <MaterialCommunityIcons name="lightning-bolt" size={18} color="#F5B400" />
-            <Text style={styles.sectionTitle}>Flash Sale</Text>
-          </View>
-
-          <View style={styles.sectionRight}>
-            <Text style={styles.endsText}>Kết thúc trong</Text>
-            <View style={styles.timerPill}>
-              <Text style={styles.timerText}>02:45:30</Text>
-            </View>
-          </View>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 6 }}>
-          {flashSale.map((p) => (
-            <Pressable key={p.id} style={styles.flashCard} onPress={() => openProduct(p)}>
-              <View style={styles.flashImgWrap}>
-                <Image source={{ uri: p.img }} style={styles.flashImg} />
-                {!!p.discount && (
-                  <View style={styles.discountBadge}>
-                    <Text style={styles.discountText}>{p.discount}</Text>
-                  </View>
-                )}
+        {!!activeFlashSales.length && (
+          <>
+            {/* Flash Sale */}
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionLeft}>
+                <MaterialCommunityIcons name="lightning-bolt" size={18} color="#F5B400" />
+                <Text style={styles.sectionTitle}>Flash Sale</Text>
               </View>
 
-              <Text style={styles.flashName} numberOfLines={2}>
-                {p.name}
-              </Text>
+              <View style={styles.sectionRight}>
+                {/* <Text style={styles.endsText}>Kết thúc trong</Text> */}
+                <View style={[styles.timerPill, { overflow: "hidden", maxWidth: 250 }]}>
+                  <FlashSaleTicker
+                    flashSales={activeFlashSales}
+                    nowMs={now}
+                    onPressItem={openFlashSaleEvent}
+                    textStyle={styles.timerText}
+                  />
+                </View>
+              </View>
+            </View>
 
-              {!!p.oldPrice && <Text style={styles.oldPrice}>{p.oldPrice}</Text>}
-              <Text style={styles.newPrice}>{p.price}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 6 }}>
+              {flashSale.map((p) => (
+                <Pressable key={`${p.promoId || "promo"}-${p.id}`} style={styles.flashCard} onPress={() => openProduct(p)}>
+                  <View style={styles.flashImgWrap}>
+                    <Image source={{ uri: p.img }} style={styles.flashImg} />
+                    {!!p.discount && (
+                      <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>{p.discount}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={styles.flashName} numberOfLines={2}>
+                    {p.name}
+                  </Text>
+
+                  {!!p.oldPrice && <Text style={styles.oldPrice}>{p.oldPrice}</Text>}
+                  <Text style={styles.newPrice}>{p.price}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        )}
 
         {/* Featured (6, scroll ngang, bỏ sao, thay bằng old/new) */}
         <Text style={[styles.sectionTitleBig, { marginTop: 18 }]}>Sản Phẩm Nổi Bật</Text>

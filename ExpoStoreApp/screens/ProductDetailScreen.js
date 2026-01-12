@@ -71,6 +71,7 @@ const normalizeProduct = (raw) => {
     name: p.name ?? "",
     sku: p.sku ?? "",
     brand: p.brandName ?? p.brand ?? "",
+    description: p.description ?? p.desc ?? p.shortDesc ?? "",
     price: Number(p.price ?? 0),
     oldPrice: Number(p.oldPrice ?? 0),
     discountPct: Number(p.discountPct ?? 0),
@@ -395,6 +396,13 @@ export default function ProductDetailScreen({ navigation, route }) {
                 </View>
               </View>
             ))}
+          </View>
+        ) : null}
+
+        {product.description ? (
+          <View style={styles.descBlock}>
+            <Text style={styles.descTitle}>Mô tả sản phẩm</Text>
+            <Text style={styles.descText}>{product.description}</Text>
           </View>
         ) : null}
 

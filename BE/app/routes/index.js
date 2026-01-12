@@ -6,6 +6,7 @@ const productRoute = require("./products.routes");
 const cartRoute = require("./cart.routes");
 const orderRoute = require("./orders.routes");
 const promoRoute = require("./promotions.routes");
+const flashSaleRoute = require("./flashsales.routes");
 const shippingRoute = require("./shipping.routes");
 const eventsRoute = require("./events.routes");
 const notifRoute = require("./notifications.routes");
@@ -22,6 +23,7 @@ function route(app) {
   app.use("/cart", cartRoute);
   app.use("/orders", orderRoute);
   app.use("/promotions", promoRoute);
+  app.use("/api/flash-sales", flashSaleRoute);
   app.use("/shipping", shippingRoute);
   app.use("/events", eventsRoute);
   app.use("/notifications", notifRoute);

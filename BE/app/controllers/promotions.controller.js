@@ -16,6 +16,29 @@ class PromotionsController {
     return res.json({ promotions: list });
   }
 
+  // GET /api/flash-sales
+  async flashSales(req, res) {
+    const list = await Promotion.findAll({
+      where: { type: "flash_sale" },
+      order: [["endsAt", "ASC"], ["id", "DESC"]],
+    });
+
+    const items = list.map((p) => ({
+      id: p.id,
+      title: p.title,
+      discountText: p.discountValue
+        ? p.discountType === "percent"
+          ? `Giảm ${Math.round(Number(p.discountValue))}%`
+          : `Giảm ${Math.round(Number(p.discountValue)).toLocaleString("vi-VN")}đ`
+        : null,
+      startAt: p.startsAt,
+      endAt: p.endsAt,
+      isActive: p.isActive ? 1 : 0,
+    }));
+
+    return res.json(items);
+  }
+
   // GET /promotions/:id/items (flash sale products)
   async items(req, res) {
     const id = req.params.id;
