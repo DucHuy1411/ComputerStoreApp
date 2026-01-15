@@ -17,8 +17,8 @@ module.exports = {
 
   // Thông tin từ VNPay Merchant Portal
   // LƯU Ý: Thay thế các giá trị này bằng thông tin thật từ VNPay Merchant Portal
-  tmnCode: 'ZJ61TPT8',
-  hashSecret: '30V3L1CO410URBEG570H6V3P59DFG2WB',
+  tmnCode: 'RUJILYF9',
+  hashSecret: 'CALJY2T38ZD712CT5COOLHVJ7Z595YQV',
 
   // URLs
   endpoints: {

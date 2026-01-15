@@ -682,6 +682,30 @@ INSERT INTO `shipping_methods` (`id`, `code`, `name`, `type`, `base_fee`, `eta_t
 
 -- --------------------------------------------------------
 
+
+
+
+-- Table structure for table `shipping`
+CREATE TABLE IF NOT EXISTS shipping_methods (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  code VARCHAR(50) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  base_fee INT NOT NULL DEFAULT 0,
+  eta_text VARCHAR(120) DEFAULT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  sort_order INT NOT NULL DEFAULT 0,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_shipping_methods_code (code),
+  KEY idx_shipping_methods_active_sort (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+
+----------------
 --
 -- Table structure for table `users`
 --
